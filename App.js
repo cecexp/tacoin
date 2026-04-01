@@ -1,10 +1,11 @@
 import { registerRootComponent } from 'expo';
-import React from 'react';
+import React, { useState } from 'react'; // 1. Añadimos useState
 import { StatusBar } from 'expo-status-bar';
 import { GameProvider, useGame } from './src/context/GameContext';
 import GameScreen from './src/screens/GameScreen';
 import WeeklyReportScreen from './src/screens/WeeklyReportScreen';
 import BankruptScreen from './src/screens/BankruptScreen';
+import SplashScreen from './src/screens/SplashScreen'; // 2. Importamos el Splash
 
 function AppNavigator() {
   const { state } = useGame();
@@ -14,10 +15,18 @@ function AppNavigator() {
 }
 
 function App() {
+  // 3. Creamos el estado para controlar la visibilidad del Splash
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <GameProvider>
       <StatusBar style="light" />
       <AppNavigator />
+      
+      {/* 4. Si showSplash es true, se muestra el SplashScreen encima */}
+      {showSplash && (
+        <SplashScreen onFinish={() => setShowSplash(false)} />
+      )}
     </GameProvider>
   );
 }
