@@ -1,13 +1,15 @@
 import { registerRootComponent } from 'expo';
-import React, { useState } from 'react'; // 1. Añadimos useState
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GameProvider, useGame } from './src/context/GameContext';
 import GameScreen from './src/screens/GameScreen';
 import WeeklyReportScreen from './src/screens/WeeklyReportScreen';
 import BankruptScreen from './src/screens/BankruptScreen';
-import SplashScreen from './src/screens/SplashScreen'; // 2. Importamos el Splash
+import SplashScreen from './src/screens/SplashScreen';
+import MenuScreen from './src/screens/MenuScreen';
+import MapScreen from './src/screens/MapScreen';
 
-function AppNavigator() {
+function AppNavigator({ semanaActual, onMapPlay }) {
   const { state } = useGame();
   if (state.screen === 'weekly_report') return <WeeklyReportScreen />;
   if (state.screen === 'bankrupt') return <BankruptScreen />;
@@ -15,18 +17,43 @@ function AppNavigator() {
 }
 
 function App() {
-  // 3. Creamos el estado para controlar la visibilidad del Splash
-  const [showSplash, setShowSplash] = useState(true);
+  const [screen, setScreen] = useState('splash');
+  const [semanaActual, setSemanaActual] = useState(1);
+
+  if (screen === 'splash') {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <SplashScreen onFinish={() => setScreen('menu')} />
+      </>
+    );
+  }
+
+  if (screen === 'menu') {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <MenuScreen onPlay={() => setScreen('map')} />
+      </>
+    );
+  }
+
+  if (screen === 'map') {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <MapScreen
+          semanaActual={semanaActual}
+          onPlay={() => setScreen('game')}
+        />
+      </>
+    );
+  }
 
   return (
     <GameProvider>
       <StatusBar style="light" />
-      <AppNavigator />
-      
-      {/* 4. Si showSplash es true, se muestra el SplashScreen encima */}
-      {showSplash && (
-        <SplashScreen onFinish={() => setShowSplash(false)} />
-      )}
+      <AppNavigator semanaActual={semanaActual} />
     </GameProvider>
   );
 }
