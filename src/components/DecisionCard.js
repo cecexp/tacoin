@@ -2,46 +2,46 @@ import React from 'react';
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 
 export default function DecisionCard({ decision, onPress, disabled }) {
-  const getImpactoColor = () => {
-    if (decision.esCryptoCompra || decision.esCryptoVenta) return '#a78bfa';
+  const getColor = () => {
+    if (decision.esCryptoCompra || decision.esCryptoVenta) return '#8b1a1a';
     const delta = (decision.deltaEfectivo || 0) + (decision.deltaAhorro || 0);
-    if (delta > 0) return '#4ade80';
-    if (delta < 0) return '#f87171';
-    return '#9ca3af';
+    if (delta > 0) return '#4a9e4a';
+    if (delta < 0) return '#c0392b';
+    return '#8c7c6e';
   };
 
-  const getImpactoTexto = () => {
-    const partes = [];
-    if (decision.esCryptoCompra) partes.push(`-$${decision.montoCryptoCompra} → 🪙 BC`);
-    else if (decision.esCryptoVenta) partes.push(`-${decision.cantidadVenta} BC → 💵`);
-    else if (decision.esCryptoCompraDesdeAhorro) partes.push(`Ahorro -$${decision.montoCryptoCompra} → 🪙 BC`);
+  const getImpacto = () => {
+    const p = [];
+    if (decision.esCryptoCompra)           p.push(`-$${decision.montoCryptoCompra} → 🪙 BC`);
+    else if (decision.esCryptoVenta)       p.push(`-${decision.cantidadVenta} BC → 💵`);
+    else if (decision.esCryptoCompraDesdeAhorro) p.push(`Ahorro -$${decision.montoCryptoCompra} → 🪙 BC`);
     else {
-      if (decision.deltaEfectivo) partes.push(`Efectivo ${decision.deltaEfectivo > 0 ? '+' : ''}$${decision.deltaEfectivo}`);
-      if (decision.deltaAhorro) partes.push(`Ahorro ${decision.deltaAhorro > 0 ? '+' : ''}$${decision.deltaAhorro}`);
-      if (decision.deltaCrypto) partes.push(`BC ${decision.deltaCrypto > 0 ? '+' : ''}${decision.deltaCrypto}`);
+      if (decision.deltaEfectivo) p.push(`Efectivo ${decision.deltaEfectivo > 0 ? '+' : ''}$${decision.deltaEfectivo}`);
+      if (decision.deltaAhorro)   p.push(`Ahorro ${decision.deltaAhorro > 0 ? '+' : ''}$${decision.deltaAhorro}`);
+      if (decision.deltaCrypto)   p.push(`BC ${decision.deltaCrypto > 0 ? '+' : ''}${decision.deltaCrypto}`);
     }
-    return partes.length ? partes.join(' · ') : 'Sin cambio financiero';
+    return p.length ? p.join(' · ') : 'Sin cambio financiero';
   };
 
-  const color = getImpactoColor();
+  const color = getColor();
 
   return (
     <TouchableOpacity
-      style={[styles.card, disabled && styles.disabled, { borderColor: color + '44' }]}
+      style={[styles.card, disabled && styles.disabled, { borderLeftColor: color }]}
       onPress={() => onPress(decision)}
       disabled={disabled}
-      activeOpacity={0.75}
+      activeOpacity={0.78}
     >
       <View style={styles.row}>
         <View style={styles.content}>
           <Text style={styles.titulo}>{decision.titulo}</Text>
           <Text style={styles.descripcion}>{decision.descripcion}</Text>
-          <View style={[styles.badge, { backgroundColor: color + '22', borderColor: color + '66' }]}>
-            <Text style={[styles.badgeText, { color }]}>{getImpactoTexto()}</Text>
+          <View style={[styles.badge, { backgroundColor: color + '18', borderColor: color + '55' }]}>
+            <Text style={[styles.badgeText, { color }]}>{getImpacto()}</Text>
           </View>
         </View>
-        <View style={[styles.arrow, { backgroundColor: color + '22' }]}>
-          <Text style={{ color, fontSize: 18 }}>›</Text>
+        <View style={[styles.arrow, { backgroundColor: color + '15', borderColor: color + '44' }]}>
+          <Text style={{ color, fontSize: 20, fontWeight: '700' }}>›</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -50,34 +50,24 @@ export default function DecisionCard({ decision, onPress, disabled }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#16213e',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderRadius: 14,
     borderWidth: 1,
+    borderColor: '#e8e0d4',
+    borderLeftWidth: 4,
     padding: 16,
     marginBottom: 10,
+    shadowColor: '#8c7c6e',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  disabled: {
-    opacity: 0.45,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  content: {
-    flex: 1,
-    gap: 6,
-  },
-  titulo: {
-    color: '#f1f5f9',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  descripcion: {
-    color: '#94a3b8',
-    fontSize: 13,
-    lineHeight: 18,
-  },
+  disabled: { opacity: 0.45 },
+  row:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  content: { flex: 1, gap: 5 },
+  titulo:      { color: '#3a1a0a', fontSize: 15, fontWeight: '700' },
+  descripcion: { color: '#6b5c54', fontSize: 13, lineHeight: 18 },
   badge: {
     alignSelf: 'flex-start',
     borderWidth: 1,
@@ -86,15 +76,10 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     marginTop: 4,
   },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
+  badgeText: { fontSize: 11, fontWeight: '700' },
   arrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 34, height: 34, borderRadius: 17,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1,
   },
 });

@@ -8,8 +8,10 @@ import BankruptScreen from './src/screens/BankruptScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import MenuScreen from './src/screens/MenuScreen';
 import MapScreen from './src/screens/MapScreen';
+import IntroScreen from './src/screens/IntroScreen';
+import LevelIntroScreen from './src/screens/LevelIntroScreen';
 
-function AppNavigator({ semanaActual, onMapPlay }) {
+function AppNavigator() {
   const { state } = useGame();
   if (state.screen === 'weekly_report') return <WeeklyReportScreen />;
   if (state.screen === 'bankrupt') return <BankruptScreen />;
@@ -18,42 +20,30 @@ function AppNavigator({ semanaActual, onMapPlay }) {
 
 function App() {
   const [screen, setScreen] = useState('splash');
-  const [semanaActual, setSemanaActual] = useState(1);
+  const [introVista, setIntroVista] = useState(false);
+  const [semanaActual] = useState(1);
+  const [diaActual] = useState(1);
 
-  if (screen === 'splash') {
-    return (
-      <>
-        <StatusBar style="dark" />
-        <SplashScreen onFinish={() => setScreen('menu')} />
-      </>
-    );
-  }
+  if (screen === 'splash')
+    return <><StatusBar style="dark" /><SplashScreen onFinish={() => setScreen('menu')} /></>;
 
-  if (screen === 'menu') {
-    return (
-      <>
-        <StatusBar style="dark" />
-        <MenuScreen onPlay={() => setScreen('map')} />
-      </>
-    );
-  }
+  if (screen === 'menu')
+    return <><StatusBar style="dark" /><MenuScreen onPlay={() => setScreen(introVista ? 'map' : 'intro')} /></>;
 
-  if (screen === 'map') {
-    return (
-      <>
-        <StatusBar style="dark" />
-        <MapScreen
-          semanaActual={semanaActual}
-          onPlay={() => setScreen('game')}
-        />
-      </>
-    );
-  }
+  if (screen === 'intro')
+    return <><StatusBar hidden /><IntroScreen onFinish={() => { setIntroVista(true); setScreen('map'); }} /></>;
+
+  if (screen === 'map')
+    return <><StatusBar style="dark" /><MapScreen semanaActual={semanaActual} onPlay={() => setScreen('level_intro')} /></>;
+
+  // ← NUEVO: intro del nivel antes de jugar
+  if (screen === 'level_intro')
+    return <><StatusBar style="dark" /><LevelIntroScreen semana={semanaActual} dia={diaActual} onFinish={() => setScreen('game')} /></>;
 
   return (
     <GameProvider>
-      <StatusBar style="light" />
-      <AppNavigator semanaActual={semanaActual} />
+      <StatusBar style="dark" />
+      <AppNavigator />
     </GameProvider>
   );
 }
