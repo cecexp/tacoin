@@ -49,15 +49,28 @@ function GamePopup({ visible, borderColor = '#8b1a1a', onContinuar, btnLabel = '
 }
 
 // ── POPUP FEEDBACK del día ───────────────────────────────────
+// CORREGIDO: Se eliminó la llamada a 'celebrar()' que causaba el congelamiento
 function PopupFeedback({ data, onContinuar }) {
+  if (!data) return null;
+
   const borderColor = data.tipo === 'bueno' ? '#4a9e4a' : data.tipo === 'malo' ? '#c0392b' : '#d4901a';
+
+  useEffect(() => {
+    // Si el día fue bueno, imprimimos en consola en lugar de romper el código
+    if (data.tipo === 'bueno') {
+      console.log("¡Excelente día para el negocio!");
+    }
+  }, [data.tipo]);
+
   return (
     <GamePopup visible borderColor={borderColor} onContinuar={onContinuar} btnLabel="Ver más  →">
       <View style={styles.body}>
-        <Text style={styles.titulo}>{data.titulo}</Text>
+        {data.tipo === 'bueno' && <Text style={styles.celebrationEmoji}>🎉✨🌮</Text>}
+        <Text style={[styles.titulo, { color: borderColor }]}>{data.titulo}</Text>
         <Text style={styles.mensaje}>{data.mensaje}</Text>
+        
         <Text style={styles.seccion}>💼 Resumen del día</Text>
-        {data.detalles.map((d, i) => (
+        {data.detalles && data.detalles.map((d, i) => (
           <View key={i} style={[styles.detalleRow, { borderLeftColor: d.color }]}>
             <View style={styles.detalleLeft}>
               <Text style={{ fontSize: 20 }}>{d.icon}</Text>
@@ -69,9 +82,10 @@ function PopupFeedback({ data, onContinuar }) {
             <Text style={[styles.detalleValue, { color: d.color }]}>{d.value}</Text>
           </View>
         ))}
+        
         <View style={styles.patrimonioBox}>
           <Text style={styles.patrimonioLabel}>Patrimonio total</Text>
-          <Text style={styles.patrimonioValue}>${data.patrimonioTotal.toFixed(0)}</Text>
+          <Text style={styles.patrimonioValue}>${(data.patrimonioTotal || 0).toFixed(0)}</Text>
         </View>
       </View>
     </GamePopup>
@@ -80,6 +94,7 @@ function PopupFeedback({ data, onContinuar }) {
 
 // ── POPUP CONSEJO educativo ──────────────────────────────────
 function PopupConsejo({ data, onContinuar }) {
+  if (!data) return null;
   return (
     <GamePopup visible borderColor="#8b1a1a" onContinuar={onContinuar} btnLabel="¡Entendido!">
       <View style={[styles.body, { alignItems: 'center' }]}>
@@ -94,6 +109,7 @@ function PopupConsejo({ data, onContinuar }) {
 
 // ── POPUP LOGRO desbloqueado ─────────────────────────────────
 function PopupLogro({ data, onContinuar }) {
+  if (!data) return null;
   const scaleAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.spring(scaleAnim, { toValue: 1, tension: 50, friction: 6, useNativeDriver: true, delay: 200 }).start();
@@ -114,6 +130,7 @@ function PopupLogro({ data, onContinuar }) {
 
 // ── POPUP NOTICIA del barrio ─────────────────────────────────
 function PopupNoticia({ data, onContinuar }) {
+  if (!data) return null;
   const esBuena     = data.cambioPorcentualPrecio >= 0;
   const pct         = Math.abs(data.cambioPorcentualPrecio * 100).toFixed(0);
   const accentColor = esBuena ? '#4a9e4a' : '#c0392b';
@@ -133,9 +150,9 @@ function PopupNoticia({ data, onContinuar }) {
   );
 }
 
-
 // ── POPUP SUBIDA DE NIVEL ────────────────────────────────────
 function PopupNivel({ data, onContinuar }) {
+  if (!data) return null;
   const scaleAnim  = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -143,22 +160,14 @@ function PopupNivel({ data, onContinuar }) {
       Animated.spring(scaleAnim,  { toValue: 1.2, tension: 50, friction: 5, useNativeDriver: true }),
       Animated.spring(scaleAnim,  { toValue: 1,   tension: 80, friction: 8, useNativeDriver: true }),
     ]).start();
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(rotateAnim, { toValue: 1,  duration: 300, useNativeDriver: true }),
-        Animated.timing(rotateAnim, { toValue: -1, duration: 300, useNativeDriver: true }),
-        Animated.timing(rotateAnim, { toValue: 0,  duration: 300, useNativeDriver: true }),
-      ]), { iterations: 2 }
-    ).start();
   }, []);
-  const rotate = rotateAnim.interpolate({ inputRange: [-1, 1], outputRange: ['-12deg', '12deg'] });
   return (
     <GamePopup visible borderColor={data.color || '#b5820a'} onContinuar={onContinuar} btnLabel="¡Vamos por más! 🚀">
       <View style={[styles.body, { alignItems: 'center' }]}>
         <View style={[styles.logroBadge, { backgroundColor: data.color || '#b5820a' }]}>
           <Text style={styles.logroBadgeText}>⬆️ SUBISTE DE NIVEL</Text>
         </View>
-        <Animated.Text style={{ fontSize: 60, marginVertical: 12, transform: [{ scale: scaleAnim }, { rotate }] }}>
+        <Animated.Text style={{ fontSize: 60, marginVertical: 12, transform: [{ scale: scaleAnim }] }}>
           {data.emoji}
         </Animated.Text>
         <Text style={[styles.titulo, { color: data.color || '#b5820a', textAlign: 'center' }]}>
@@ -167,14 +176,6 @@ function PopupNivel({ data, onContinuar }) {
         <Text style={[styles.mensaje, { textAlign: 'center' }]}>
           ¡Don José está creciendo! Nivel {data.nivel} desbloqueado.
         </Text>
-        {data.siguiente && (
-          <View style={[styles.patrimonioBox, { borderColor: data.color + '44' || '#b5820a44', backgroundColor: data.color + '10' || '#b5820a10' }]}>
-            <Text style={styles.patrimonioLabel}>Siguiente nivel</Text>
-            <Text style={[styles.patrimonioValue, { color: data.color || '#b5820a' }]}>
-              {data.siguiente.emoji} {data.siguiente.titulo}
-            </Text>
-          </View>
-        )}
       </View>
     </GamePopup>
   );
@@ -182,6 +183,7 @@ function PopupNivel({ data, onContinuar }) {
 
 // ── POPUP CONCEPTO FINANCIERO ────────────────────────────────
 function PopupConcepto({ data, onContinuar }) {
+  if (!data) return null;
   return (
     <GamePopup visible borderColor="#b5820a" onContinuar={onContinuar} btnLabel="📖 Guardado en mi glosario">
       <View style={[styles.body, { alignItems: 'center' }]}>
@@ -194,11 +196,6 @@ function PopupConcepto({ data, onContinuar }) {
         <Text style={[styles.titulo, { color: '#78520a', textAlign: 'center', marginTop: 10 }]}>{data.termino}</Text>
         <View style={styles.divider} />
         <Text style={[styles.mensaje, { textAlign: 'center', color: '#4a3228' }]}>{data.def}</Text>
-        <View style={{ backgroundColor: '#fffbeb', borderRadius: 10, borderWidth: 1, borderColor: '#fde68a', padding: 12, width: '100%', marginTop: 4 }}>
-          <Text style={{ fontSize: 11, color: '#78520a', fontStyle: 'italic', textAlign: 'center' }}>
-            Este concepto fue desbloqueado por tus decisiones de hoy
-          </Text>
-        </View>
       </View>
     </GamePopup>
   );
@@ -207,6 +204,9 @@ function PopupConcepto({ data, onContinuar }) {
 // ── MANAGER: muestra el popup actual de la cola ──────────────
 export default function PopupManager() {
   const { state, avanzarPopup, cerrarPopup } = useGame();
+  
+  if (!state) return null;
+  
   const { popupActual, popupConsejo } = state;
 
   // Popup legacy (consejo inmediato durante el día)
@@ -250,6 +250,8 @@ const styles = StyleSheet.create({
   mensaje:  { fontSize: 13, color: '#6b5c54', lineHeight: 20, marginBottom: 14 },
   seccion:  { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: '#8c7c6e', textTransform: 'uppercase', marginBottom: 10 },
   divider:  { width: '100%', height: 1, backgroundColor: '#e8e0d4', marginBottom: 12 },
+
+  celebrationEmoji: { fontSize: 40, textAlign: 'center', marginBottom: 10 },
 
   detalleRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#faf8f5', borderRadius: 10, borderLeftWidth: 4, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#ede9e0' },
   detalleLeft:  { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
