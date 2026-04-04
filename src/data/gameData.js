@@ -272,3 +272,357 @@ export const getDecisionesParaDia = (dia) => {
   const diaEnCiclo = ((dia - 1) % 6) + 1;
   return DECISIONES_POR_DIA[diaEnCiclo] || DECISIONES_POR_DIA[1];
 };
+
+// ============================================================
+// MISIONES DIARIAS
+// tipo: 'efectivo_minimo' | 'no_tocar_ahorro' | 'comprar_crypto' |
+//       'dia_completo' | 'vender_crypto' | 'ahorro_minimo' | 'libre'
+// ============================================================
+export const MISIONES_POOL = [
+  {
+    id: 'M_VENDE_150',
+    titulo: 'Día productivo',
+    desc: 'Genera al menos $150 de ventas netas hoy.',
+    icono: '💪',
+    tipo: 'dia_completo',
+    recompensa: { tipo: 'efectivo', cantidad: 60 },
+    recompensaLabel: '+$60 de bonus',
+    consejo: 'Trabajar el día completo es la forma más segura de generar ventas.',
+  },
+  {
+    id: 'M_NO_AHORRO',
+    titulo: 'Aguanta sin ahorro',
+    desc: 'Completa el día sin mover dinero al ahorro personal.',
+    icono: '🔒',
+    tipo: 'no_tocar_ahorro',
+    recompensa: { tipo: 'efectivo', cantidad: 40 },
+    recompensaLabel: '+$40 de bonus',
+    consejo: 'A veces mantener el flujo del negocio es más importante que ahorrar.',
+  },
+  {
+    id: 'M_COMPRA_BC',
+    titulo: 'Diversifica hoy',
+    desc: 'Invierte en BirriaCoin antes de cerrar el puesto.',
+    icono: '🪙',
+    tipo: 'comprar_crypto',
+    recompensa: { tipo: 'crypto', cantidad: 0.5 },
+    recompensaLabel: '+0.5 BC gratis',
+    consejo: 'Diversificar reduce el riesgo total de tu portafolio.',
+  },
+  {
+    id: 'M_AHORRA_100',
+    titulo: 'Fondo de emergencia',
+    desc: 'Mueve al menos $100 al ahorro personal hoy.',
+    icono: '🏦',
+    tipo: 'ahorro_minimo',
+    meta: 100,
+    recompensa: { tipo: 'efectivo', cantidad: 30 },
+    recompensaLabel: '+$30 de bonus',
+    consejo: 'El fondo de emergencia es el primer paso de la salud financiera.',
+  },
+  {
+    id: 'M_VENDE_BC',
+    titulo: 'Liquida con ganancia',
+    desc: 'Vende BirriaCoin si tienes en cartera.',
+    icono: '📈',
+    tipo: 'vender_crypto',
+    recompensa: { tipo: 'efectivo', cantidad: 50 },
+    recompensaLabel: '+$50 de bonus',
+    consejo: 'Saber cuándo salir de una inversión es tan importante como entrar.',
+  },
+  {
+    id: 'M_DIA_LIBRE',
+    titulo: 'Día de estrategia',
+    desc: 'Toma decisiones libremente — hoy no hay restricciones.',
+    icono: '🌮',
+    tipo: 'libre',
+    recompensa: { tipo: 'efectivo', cantidad: 20 },
+    recompensaLabel: '+$20 por jugar',
+    consejo: 'La libertad financiera viene de conocer tus opciones.',
+  },
+  {
+    id: 'M_COMPLETO_AHORRAR',
+    titulo: 'Trabaja y ahorra',
+    desc: 'Completa el día Y mueve algo al ahorro.',
+    icono: '⚡',
+    tipo: 'dia_completo_y_ahorro',
+    recompensa: { tipo: 'efectivo', cantidad: 80 },
+    recompensaLabel: '+$80 de bonus',
+    consejo: 'La combinación de trabajo + ahorro es la fórmula del crecimiento sostenido.',
+  },
+];
+
+export const getMisionParaDia = (diaGlobal) => {
+  const idx = (diaGlobal - 1) % MISIONES_POOL.length;
+  return MISIONES_POOL[idx];
+};
+
+// ============================================================
+// EVENTOS SORPRESA
+// impacto: multiplicador de ventas ese día
+// ============================================================
+export const EVENTOS_SORPRESA = [
+  {
+    id: 'inspector',
+    titulo: '🕵️ ¡Inspector de sanidad!',
+    desc: 'Un inspector llegó al puesto. Pasaste la revisión, pero tuviste que pagar una "mordida".',
+    impactoEfectivo: -80,
+    impactoVentas: 1.0,
+    icono: '🕵️',
+    tipo: 'malo',
+    donJoseFrase: '"Todos los años lo mismo con este señor... Ay, México lindo."',
+    leccionFinanciera: 'Siempre ten un fondo para imprevistos — los gastos inesperados son parte del negocio.',
+  },
+  {
+    id: 'influencer_visita',
+    titulo: '⭐ ¡Un influencer probó tu birria!',
+    desc: 'Un youtuber con 50k seguidores publicó tu puesto. Las ventas se dispararon.',
+    impactoEfectivo: 0,
+    impactoVentas: 1.8,
+    icono: '⭐',
+    tipo: 'bueno',
+    donJoseFrase: '"¿Y eso del youtuber? Mi abuela vendía igual de bien sin internet, joven."',
+    leccionFinanciera: 'El marketing boca a boca es el más poderoso — y el más barato.',
+  },
+  {
+    id: 'lluvia_torrencial',
+    titulo: '🌧️ Lluvia torrencial',
+    desc: 'Nadie sale a comprar tacos con este aguacero. Ventas muy bajas.',
+    impactoEfectivo: 0,
+    impactoVentas: 0.4,
+    icono: '🌧️',
+    tipo: 'malo',
+    donJoseFrase: '"La lluvia es agua de Dios, mijo. Pero también es un problema pa\' los tacos."',
+    leccionFinanciera: 'Los negocios físicos dependen del entorno. Diversificar ingresos protege de esto.',
+  },
+  {
+    id: 'cliente_vip',
+    titulo: '👔 ¡Cliente corporativo!',
+    desc: 'Una empresa del centro pidió 50 tacos para su desayuno de trabajo.',
+    impactoEfectivo: 200,
+    impactoVentas: 1.0,
+    icono: '👔',
+    tipo: 'bueno',
+    donJoseFrase: '"¡Cincuenta tacos! Nunca pensé que mi birria llegaría a las oficinas."',
+    leccionFinanciera: 'Los clientes B2B pueden cambiar tu negocio. Un solo contrato puede valer más que 100 clientes individuales.',
+  },
+  {
+    id: 'gas_agotado',
+    titulo: '💨 ¡Se acabó el gas!',
+    desc: 'Tuviste que cerrar temprano para ir por una nueva pipa. Sin penalización hoy.',
+    impactoEfectivo: -30,
+    impactoVentas: 0.5,
+    icono: '💨',
+    tipo: 'neutro',
+    donJoseFrase: '"El gas, el aceite, los chiles... esto de tener negocio nunca acaba."',
+    leccionFinanciera: 'El control de inventario evita paros operativos. Anticipa antes de que se acabe.',
+  },
+  {
+    id: 'vecino_ayuda',
+    titulo: '🤝 Tu vecino te echa la mano',
+    desc: 'El vecino taquero cubrió tu puesto mientras descansabas. Ganaste sin trabajar.',
+    impactoEfectivo: 80,
+    impactoVentas: 1.0,
+    icono: '🤝',
+    tipo: 'bueno',
+    donJoseFrase: '"El barrio cuida al barrio. Eso no tiene precio, mijo."',
+    leccionFinanciera: 'Las redes de apoyo son un activo intangible. Invierte en tus relaciones.',
+  },
+  {
+    id: 'competidor_nuevo',
+    titulo: '😤 ¡Abrió otro puesto de tacos!',
+    desc: 'Un competidor nuevo se instaló a media cuadra. Te robó algunos clientes hoy.',
+    impactoEfectivo: 0,
+    impactoVentas: 0.7,
+    icono: '😤',
+    tipo: 'malo',
+    donJoseFrase: '"Que haya competencia está bien. Nos obliga a mejorar. Aunque duele."',
+    leccionFinanciera: 'La competencia es parte del mercado libre. La diferenciación — tu sazón único — es tu ventaja.',
+  },
+  {
+    id: 'luz_gratis',
+    titulo: '⚡ Día sin costos de luz',
+    desc: 'El gobierno dio un subsidio de energía hoy. Ahorras en operación.',
+    impactoEfectivo: 35,
+    impactoVentas: 1.0,
+    icono: '⚡',
+    tipo: 'bueno',
+    donJoseFrase: '"¡Bendito el gobierno cuando sí ayuda! Aunque no pasa seguido."',
+    leccionFinanciera: 'Los subsidios y apoyos gubernamentales son parte del entorno económico de un negocio.',
+  },
+];
+
+export const getEventoAleatorio = () => {
+  const probabilidad = 0.35; // 35% de chance cada día
+  if (Math.random() > probabilidad) return null;
+  return EVENTOS_SORPRESA[Math.floor(Math.random() * EVENTOS_SORPRESA.length)];
+};
+
+// ============================================================
+// DIÁLOGOS DE DON JOSÉ
+// Se disparan según contexto
+// ============================================================
+export const DIALOGOS_DON_JOSE = {
+  // Al tomar decisiones recomendadas
+  decision_buena: [
+    'Eso es lo que aprendí tarde yo... tú vas bien, mijo.',
+    '¡Así mero! Mi abuela decía: "El que sabe gastar, sabe ganar".',
+    'Treinta años de contador me enseñaron eso exacto.',
+    '¡Órale! El negocio que piensa, el negocio que crece.',
+    'Decisión de empresario, no de asalariado. Así se hace.',
+  ],
+  // Al tomar decisiones no recomendadas
+  decision_mala: [
+    'Ay mijo... en la textilera nunca perdíamos así. Hay que aprender.',
+    'Mi abuela decía: "El dinero fácil se va fácil". Cuidado.',
+    'Eso lo hice yo una vez. Una sola vez. Ya sé por qué.',
+    'Hmm... a veces el camino más corto es el más caro.',
+    'No te me desanimes. Cada error es una lección de finanzas gratis.',
+  ],
+  // Cuando BC sube mucho (+20% o más)
+  crypto_sube: [
+    '¿Monedas digitales? En la textilera solo había pesos y el reloj chocador.',
+    '¡Virgen santísima! ¿Cómo sube así una moneda que no existe?',
+    'Treinta años de contador y nunca vi esto. El mundo cambió, mijo.',
+    '¡Ese BirriaCoin! Si mi abuela supiera...',
+  ],
+  // Cuando BC baja mucho (-20% o más)
+  crypto_baja: [
+    'Ya ven, mijo. Por eso yo prefería los bonos del gobierno.',
+    'Esto del crypto es como la ruleta, pero más rápido.',
+    'Diversifica, te digo. No pongas todos los chiles en una cazuela.',
+    'Ay, el mercado... impredecible como el tiempo en Jalisco.',
+  ],
+  // Al cerrar temprano
+  cierre_temprano: [
+    'El que madruga, Dios lo ayuda. El que cierra temprano... paga costos igual.',
+    'Mijo, el puesto solo gana cuando está abierto.',
+    'Treinta años llegando primero a la oficina. Eso me lo enseñó la vida.',
+    'Hmm... hoy no fue nuestro día completo. Mañana más.',
+  ],
+  // Al completar el día
+  dia_completo: [
+    '¡Eso es! Día completo, cuenta alegre.',
+    'Así como en la textilera: primero en llegar, último en irse.',
+    'Buen día de trabajo, mijo. El negocio lo nota.',
+    '¡Órale! Hoy Don José estuvo a la altura.',
+  ],
+  // Al lograr la misión
+  mision_cumplida: [
+    '¡Mira qué bien! Misión cumplida. Mi abuela estaría orgullosa.',
+    '¡Eso es disciplina financiera! Treinta años de contador lo confirman.',
+    '¡Órale! Cuando uno se propone algo, lo logra. Así es.',
+    '¡Bien hecho! En el negocio, los objetivos son la brújula.',
+  ],
+  // Al fallar la misión
+  mision_fallida: [
+    'No hay pena, mijo. Mañana es otro día y otra misión.',
+    'La meta se fue hoy, pero la lección se quedó.',
+    'En finanzas, el que no falla nunca, nunca jugó.',
+    'Ay... pero ya sabemos dónde mejorar. Eso vale.',
+  ],
+  // Saludo del día
+  saludo_manana: [
+    '¡Buenos días! El consomé ya está listo. ¿Qué decisiones tomamos hoy?',
+    'Amanecimos con $$ en la bolsa. ¡A trabajarlos!',
+    '¡Arriba! El barrio nos espera. ¿Qué hacemos hoy, mijo?',
+    'Nuevo día, nuevas oportunidades. Así decía mi jefe en la textilera.',
+    '¡Ánimo! La birria más rica del barrio no se vende sola.',
+  ],
+  // Si patrimonio es muy bajo
+  alerta_dinero: [
+    'Mijo... esto se está poniendo serio. Hay que cuidar el centavo.',
+    'Cuando era contador, una caja chica baja era señal de problemas. Cuidado.',
+    'No hay que alarmarse, pero sí hay que actuar. ¿Qué vendemos hoy?',
+  ],
+};
+
+export const getDonJoseFrase = (contexto) => {
+  const frases = DIALOGOS_DON_JOSE[contexto];
+  if (!frases || frases.length === 0) return null;
+  return frases[Math.floor(Math.random() * frases.length)];
+};
+
+// ============================================================
+// SISTEMA XP Y NIVELES
+// ============================================================
+export const NIVELES_XP = [
+  { nivel: 1, titulo: 'Aprendiz Taquero',   emoji: '🌱', xpRequerido: 0,    color: '#8c7c6e' },
+  { nivel: 2, titulo: 'Taquero del Barrio', emoji: '🌮', xpRequerido: 100,  color: '#4a9e4a' },
+  { nivel: 3, titulo: 'Empresario Local',   emoji: '💼', xpRequerido: 250,  color: '#1a6fb5' },
+  { nivel: 4, titulo: 'Inversor Cripto',    emoji: '🪙', xpRequerido: 500,  color: '#b5820a' },
+  { nivel: 5, titulo: 'Don José Famoso',    emoji: '🏆', xpRequerido: 1000, color: '#8b1a1a' },
+];
+
+export const XP_POR_ACCION = {
+  decision_recomendada:     20,
+  decision_no_recomendada:  5,
+  dia_completo_bonus:       15,
+  mision_cumplida_bonus:    30,
+  logro_desbloqueado:       25,
+};
+
+export const getNivelActual = (xpTotal) => {
+  let nivelActual = NIVELES_XP[0];
+  for (const n of NIVELES_XP) {
+    if (xpTotal >= n.xpRequerido) nivelActual = n;
+    else break;
+  }
+  const idx = NIVELES_XP.indexOf(nivelActual);
+  const siguiente = NIVELES_XP[idx + 1] || null;
+  const xpEnNivel = xpTotal - nivelActual.xpRequerido;
+  const xpParaSiguiente = siguiente ? siguiente.xpRequerido - nivelActual.xpRequerido : 999;
+  const progreso = siguiente ? xpEnNivel / xpParaSiguiente : 1;
+  return { ...nivelActual, siguiente, xpEnNivel, xpParaSiguiente, progreso };
+};
+
+// ============================================================
+// CONCEPTOS FINANCIEROS — educación integrada
+// ============================================================
+export const CONCEPTOS_FINANCIEROS = {
+  'reinversion':         { termino: 'Reinversión',          def: 'Usar las ganancias del negocio para hacerlo crecer en lugar de gastarlas.' },
+  'flujo_caja':          { termino: 'Flujo de Caja',        def: 'El dinero que entra y sale de tu negocio. Si sale más de lo que entra, hay problema.' },
+  'fondo_emergencia':    { termino: 'Fondo de Emergencia',  def: 'Dinero guardado para imprevistos. Lo ideal: 3-6 meses de gastos básicos.' },
+  'diversificacion':     { termino: 'Diversificación',      def: 'No poner todos los recursos en una sola inversión. Reduce el riesgo total.' },
+  'costo_oportunidad':   { termino: 'Costo de Oportunidad', def: 'Lo que pierdes al elegir una opción en vez de otra. Cerrar antes = ventas perdidas.' },
+  'volatilidad':         { termino: 'Volatilidad',          def: 'Qué tan rápido y fuerte cambia el precio de algo. El crypto es muy volátil.' },
+  'liquidez':            { termino: 'Liquidez',             def: 'Qué tan fácil puedes convertir un activo en efectivo sin perder valor.' },
+  'capital_trabajo':     { termino: 'Capital de Trabajo',   def: 'El dinero disponible para operar el negocio día a día. Sin él, no hay operación.' },
+  'riesgo_rendimiento':  { termino: 'Riesgo vs Rendimiento',def: 'A mayor ganancia potencial, mayor riesgo. El crypto da más, pero puede perderse todo.' },
+  'patrimonio':          { termino: 'Patrimonio Neto',      def: 'Todo lo que tienes (efectivo + ahorro + inversiones). Es tu riqueza total.' },
+  'costos_fijos':        { termino: 'Costos Fijos',         def: 'Gastos que pagas aunque no trabajes: renta, servicios, etc.' },
+  'ingresos_variables':  { termino: 'Ingresos Variables',   def: 'Lo que ganas depende de cuánto trabajas y vendes. Sin trabajo, sin ingreso.' },
+};
+
+// Qué concepto enseña cada decisión
+export const CONCEPTO_POR_DECISION = {
+  'D1_A': 'reinversion',
+  'D1_B': 'costo_oportunidad',
+  'D1_C': 'fondo_emergencia',
+  'D2_A': 'diversificacion',
+  'D2_B': 'liquidez',
+  'D2_C': 'costo_oportunidad',
+  'D3_A': 'riesgo_rendimiento',
+  'D3_B': 'capital_trabajo',
+  'D3_C': 'costo_oportunidad',
+  'D4_A': 'capital_trabajo',
+  'D4_B': 'volatilidad',
+  'D4_C': 'flujo_caja',
+  'D5_A': 'reinversion',
+  'D5_B': 'flujo_caja',
+  'D5_C': 'capital_trabajo',
+  'D6_A': 'costos_fijos',
+  'D6_B': 'ingresos_variables',
+  'D6_C': 'flujo_caja',
+};
+
+export const getConceptoDelDia = (historialDelDia) => {
+  if (!historialDelDia || historialDelDia.length === 0) return null;
+  for (const h of historialDelDia) {
+    const conceptoId = CONCEPTO_POR_DECISION[h.decision?.id];
+    if (conceptoId && CONCEPTOS_FINANCIEROS[conceptoId]) {
+      return { id: conceptoId, ...CONCEPTOS_FINANCIEROS[conceptoId] };
+    }
+  }
+  return null;
+};

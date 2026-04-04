@@ -10,19 +10,33 @@ import MenuScreen from './src/screens/MenuScreen';
 import MapScreen from './src/screens/MapScreen';
 import IntroScreen from './src/screens/IntroScreen';
 import LevelIntroScreen from './src/screens/LevelIntroScreen';
+import GlosarioScreen from './src/screens/GlosarioScreen';
 
-function AppNavigator() {
+// ── Navegador dentro del GameProvider ───────────────────────
+// Necesita vivir aquí para acceder al glosario del state del juego
+function AppNavigator({ onVerGlosario, showGlosario, onCerrarGlosario }) {
   const { state } = useGame();
+
+  if (showGlosario) {
+    return (
+      <GlosarioScreen
+        glosarioDesbloqueado={state.glosarioDesbloqueado || []}
+        onCerrar={onCerrarGlosario}
+      />
+    );
+  }
   if (state.screen === 'weekly_report') return <WeeklyReportScreen />;
-  if (state.screen === 'bankrupt') return <BankruptScreen />;
-  return <GameScreen />;
+  if (state.screen === 'bankrupt')      return <BankruptScreen />;
+  return <GameScreen onVerGlosario={onVerGlosario} />;
 }
 
+// ── App raíz ─────────────────────────────────────────────────
 function App() {
-  const [screen, setScreen] = useState('splash');
+  const [screen, setScreen]         = useState('splash');
   const [introVista, setIntroVista] = useState(false);
-  const [semanaActual] = useState(1);
-  const [diaActual] = useState(1);
+  const [semanaActual]              = useState(1);
+  const [diaActual]                 = useState(1);
+  const [showGlosario, setShowGlosario] = useState(false);
 
   if (screen === 'splash')
     return <><StatusBar style="dark" /><SplashScreen onFinish={() => setScreen('menu')} /></>;
@@ -36,14 +50,18 @@ function App() {
   if (screen === 'map')
     return <><StatusBar style="dark" /><MapScreen semanaActual={semanaActual} onPlay={() => setScreen('level_intro')} /></>;
 
-  // ← NUEVO: intro del nivel antes de jugar
   if (screen === 'level_intro')
     return <><StatusBar style="dark" /><LevelIntroScreen semana={semanaActual} dia={diaActual} onFinish={() => setScreen('game')} /></>;
 
+  // Todo lo demás vive dentro del GameProvider para acceder al state del juego
   return (
     <GameProvider>
       <StatusBar style="dark" />
-      <AppNavigator />
+      <AppNavigator
+        showGlosario={showGlosario}
+        onVerGlosario={() => setShowGlosario(true)}
+        onCerrarGlosario={() => setShowGlosario(false)}
+      />
     </GameProvider>
   );
 }
