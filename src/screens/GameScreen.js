@@ -81,6 +81,8 @@ export default function GameScreen({ onVerGlosario }) {
             decision={decision}
             onPress={aplicarDecision}
             disabled={!puedeDecidir}
+            efectivoActual={state.efectivoNegocio} 
+          ahorroActual={state.ahorroPersonal}
           />
         ))}
 

@@ -9,8 +9,10 @@ export default function DecisionCard({ decision, onPress, disabled, efectivoActu
   const costoCryptoEfectivo = decision.esCryptoCompra ? (decision.montoCryptoCompra || 0) : 0;
   const costoCryptoAhorro = decision.esCryptoCompraDesdeAhorro ? (decision.montoCryptoCompra || 0) : 0;
 
-  const tieneDinero = efectivoActual >= (costoEfectivo + costoCryptoEfectivo) && 
-                      ahorroActual >= (costoAhorro + costoCryptoAhorro);
+ // LÓGICA FLEXIBLE: Suma total de ambos bolsillos
+ const costoTotalNecesario = costoEfectivo + costoAhorro + costoCryptoEfectivo + costoCryptoAhorro;
+ const capitalTotal = efectivoActual + ahorroActual;
+ const tieneDinero = capitalTotal >= costoTotalNecesario;
 
   const isLocked = disabled || !tieneDinero;
 
