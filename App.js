@@ -12,56 +12,89 @@ import IntroScreen from './src/screens/IntroScreen';
 import LevelIntroScreen from './src/screens/LevelIntroScreen';
 import GlosarioScreen from './src/screens/GlosarioScreen';
 
-// ── Navegador dentro del GameProvider ───────────────────────
-// Necesita vivir aquí para acceder al glosario del state del juego
-function AppNavigator({ onVerGlosario, showGlosario, onCerrarGlosario }) {
+// ── Dentro del GameProvider: accede al state del juego ──────
+function GameFlow({ appScreen, setAppScreen }) {
   const { state } = useGame();
+  const [showGlosario, setShowGlosario] = useState(false);
+
+  // Cuando termina la semana y vuelve al juego, sincronizamos pantalla
+  const semanaActual = state.semanaGlobal;
 
   if (showGlosario) {
     return (
-      <GlosarioScreen
-        glosarioDesbloqueado={state.glosarioDesbloqueado || []}
-        onCerrar={onCerrarGlosario}
-      />
+      <>
+        <StatusBar style="dark" />
+        <GlosarioScreen
+          glosarioDesbloqueado={state.glosarioDesbloqueado || []}
+          onCerrar={() => setShowGlosario(false)}
+        />
+      </>
     );
   }
-  if (state.screen === 'weekly_report') return <WeeklyReportScreen />;
-  if (state.screen === 'bankrupt')      return <BankruptScreen />;
-  return <GameScreen onVerGlosario={onVerGlosario} />;
+
+  if (appScreen === 'map') {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <MapScreen
+          semanaActual={semanaActual}
+          onPlay={() => setAppScreen('level_intro')}
+        />
+      </>
+    );
+  }
+
+  if (appScreen === 'level_intro') {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <LevelIntroScreen
+          semana={semanaActual}
+          dia={state.diaGlobal}
+          onFinish={() => setAppScreen('game')}
+        />
+      </>
+    );
+  }
+
+  // Pantallas del juego en sí
+  if (state.screen === 'weekly_report') {
+    return (
+      <>
+        <StatusBar style="dark" />
+        <WeeklyReportScreen onContinuar={() => setAppScreen('map')} />
+      </>
+    );
+  }
+  if (state.screen === 'bankrupt') return <><StatusBar style="dark" /><BankruptScreen /></>;
+
+  return (
+    <>
+      <StatusBar style="dark" />
+      <GameScreen onVerGlosario={() => setShowGlosario(true)} />
+    </>
+  );
 }
 
 // ── App raíz ─────────────────────────────────────────────────
 function App() {
   const [screen, setScreen]         = useState('splash');
   const [introVista, setIntroVista] = useState(false);
-  const [semanaActual]              = useState(1);
-  const [diaActual]                 = useState(1);
-  const [showGlosario, setShowGlosario] = useState(false);
+  const [appScreen, setAppScreen]   = useState('map'); // dentro del GameProvider
 
   if (screen === 'splash')
     return <><StatusBar style="dark" /><SplashScreen onFinish={() => setScreen('menu')} /></>;
 
   if (screen === 'menu')
-    return <><StatusBar style="dark" /><MenuScreen onPlay={() => setScreen(introVista ? 'map' : 'intro')} /></>;
+    return <><StatusBar style="dark" /><MenuScreen onPlay={() => setScreen(introVista ? 'game_flow' : 'intro')} /></>;
 
   if (screen === 'intro')
-    return <><StatusBar hidden /><IntroScreen onFinish={() => { setIntroVista(true); setScreen('map'); }} /></>;
+    return <><StatusBar hidden /><IntroScreen onFinish={() => { setIntroVista(true); setScreen('game_flow'); }} /></>;
 
-  if (screen === 'map')
-    return <><StatusBar style="dark" /><MapScreen semanaActual={semanaActual} onPlay={() => setScreen('level_intro')} /></>;
-
-  if (screen === 'level_intro')
-    return <><StatusBar style="dark" /><LevelIntroScreen semana={semanaActual} dia={diaActual} onFinish={() => setScreen('game')} /></>;
-
-  // Todo lo demás vive dentro del GameProvider para acceder al state del juego
+  // Todo lo demás vive dentro del GameProvider
   return (
     <GameProvider>
-      <StatusBar style="dark" />
-      <AppNavigator
-        showGlosario={showGlosario}
-        onVerGlosario={() => setShowGlosario(true)}
-        onCerrarGlosario={() => setShowGlosario(false)}
-      />
+      <GameFlow appScreen={appScreen} setAppScreen={setAppScreen} />
     </GameProvider>
   );
 }

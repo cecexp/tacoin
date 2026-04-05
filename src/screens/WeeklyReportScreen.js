@@ -43,7 +43,7 @@ const bs = StyleSheet.create({
   fill:  { height: '100%', borderRadius: 5 },
 });
 
-export default function WeeklyReportScreen() {
+export default function WeeklyReportScreen({ onContinuar }) {
   const { state, cerrarReporteSemanal } = useGame();
   const { resumenSemana, xpTotal, logrosObtenidos, misionesCumplidas, rachaDias } = state;
   const { width, height } = useWindowDimensions();
@@ -146,7 +146,7 @@ export default function WeeklyReportScreen() {
           </View>
 
           {/* Botón */}
-          <TouchableOpacity style={styles.btnOuter} onPress={cerrarReporteSemanal} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.btnOuter} onPress={() => { cerrarReporteSemanal(); if (onContinuar) onContinuar(); }} activeOpacity={0.85}>
             <View style={styles.btnShadow} />
             <View style={styles.btnFace}>
               <Text style={styles.btnText}>🌮 Continuar a Semana {semanaGlobal + 1}</Text>

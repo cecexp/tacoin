@@ -105,10 +105,6 @@ function gameReducer(state, action) {
 
       // Frase Don José según decisión
       const frase = getDonJoseFrase(decision.esRecomendada ? 'decision_buena' : 'decision_mala');
-      const consejoPopup = decision.consejo
-        ? { tipo: 'consejo', data: { titulo: decision.titulo, consejo: decision.consejo } }
-        : null;
-
       const xpGanado = decision.esRecomendada ? XP_POR_ACCION.decision_recomendada : XP_POR_ACCION.decision_no_recomendada;
       const nuevoXP = (state.xpTotal || 0) + xpGanado;
       const nivelAntes = getNivelActual(state.xpTotal || 0).nivel;
@@ -122,23 +118,17 @@ function gameReducer(state, action) {
         screen: hayBancarrota ? 'bankrupt' : 'game',
         donJoseFrase: frase,
         xpTotal: nuevoXP,
-        popupConsejo: decision.consejo
-          ? { titulo: decision.titulo, consejo: decision.consejo }
-          : null,
       };
-      if (subioNivel && !hayBancarrota && accionesRestantes > 0) {
-        newState.colaPopups = [{ tipo: 'nivel', data: getNivelActual(nuevoXP) }, ...(newState.colaPopups || [])];
-        newState.popupActual = newState.popupActual || { tipo: 'nivel', data: getNivelActual(nuevoXP) };
-      }
+      // nivel se muestra al fin del dia, no durante decisiones intermedias
 
       if (accionesRestantes <= 0 && !hayBancarrota) {
-        return terminarDia({ ...newState }, true, consejoPopup);
+        return terminarDia({ ...newState }, true, null);
       }
       return newState;
     }
 
     case 'FORZAR_FIN_DIA':
-      return terminarDia({ ...state, donJoseFrase: getDonJoseFrase('cierre_temprano') }, false, null);
+      return terminarDia({ ...state, donJoseFrase: getDonJoseFrase('cierre_temprano') }, false);
 
     case 'CERRAR_EVENTO':
       return { ...state, eventoHoy: null };
@@ -171,7 +161,7 @@ function gameReducer(state, action) {
 }
 
 // ── Fin de día ────────────────────────────────────────────────
-function terminarDia(state, diaCompleto, consejoPopup) {
+function terminarDia(state, diaCompleto) {
   const costoFijo = COSTOS.renta + COSTOS.insumos;
 
   // Evento sorpresa afecta ventas
@@ -247,14 +237,27 @@ function terminarDia(state, diaCompleto, consejoPopup) {
   const nuevosLogros  = verificarLogros(statsActuales, state.logrosObtenidos);
   const logrosObtIds  = [...state.logrosObtenidos, ...nuevosLogros.map(l => l.id)];
 
-  // Cola de popups
+  // ── Cola de popups — máximo 2 por día ──────────────────────
+  // Regla: el feedback siempre incluye todo (misión, evento, concepto, noticia).
+  // Solo agregamos UN segundo popup si hay algo verdaderamente especial
+  // (subiste de nivel o desbloqueaste un logro). Nada más.
+  const feedbackData = generarFeedback(
+    diaCompleto, state.accionesUsadasHoy || 0, GAME_CONFIG.accionesFinancierasPorDia,
+    neto + efectoEvento, ventas, costoFijo,
+    state.efectivoNegocio, efConRecompensa, state.ahorroPersonal,
+    crConRecompensa, nuevoPrecio, misionCumplida, state.misionHoy,
+    state.eventoHoy, noticiaDeHoy, conceptoHoy
+  );
+
   const cola = [];
-  cola.push({ tipo: 'feedback', data: generarFeedback(diaCompleto, state.accionesUsadasHoy || 0, GAME_CONFIG.accionesFinancierasPorDia, neto + efectoEvento, ventas, costoFijo, state.efectivoNegocio, efConRecompensa, state.ahorroPersonal, crConRecompensa, nuevoPrecio, misionCumplida, state.misionHoy, state.eventoHoy) });
-  if (consejoPopup) cola.push(consejoPopup);
-  if (conceptoHoy) cola.push({ tipo: 'concepto', data: conceptoHoy });
-  if (subioNivelHoy) cola.push({ tipo: 'nivel', data: getNivelActual(nuevoXPTotal) });
-  nuevosLogros.forEach(l => cola.push({ tipo: 'logro', data: l }));
-  if (noticiaDeHoy) cola.push({ tipo: 'noticia', data: noticiaDeHoy });
+  cola.push({ tipo: 'feedback', data: feedbackData });
+
+  // Solo 1 popup extra: nivel > logro (el más impactante gana)
+  if (subioNivelHoy) {
+    cola.push({ tipo: 'nivel', data: getNivelActual(nuevoXPTotal) });
+  } else if (nuevosLogros.length > 0) {
+    cola.push({ tipo: 'logro', data: nuevosLogros[0] }); // solo el primero
+  }
 
   const [primero, ...resto] = cola;
   const hayBancarrota = efConRecompensa <= 0 && state.ahorroPersonal <= 0;
@@ -286,23 +289,53 @@ function terminarDia(state, diaCompleto, consejoPopup) {
   };
 }
 
-function generarFeedback(diaCompleto, accionesUsadas, totalAcciones, neto, ventas, costos, efAntes, efDespues, ahorro, crypto, precioBC, misionCumplida, mision, evento) {
+function generarFeedback(diaCompleto, accionesUsadas, totalAcciones, neto, ventas, costos, efAntes, efDespues, ahorro, crypto, precioBC, misionCumplida, mision, evento, noticia, concepto) {
   const gano = neto >= 0;
   const patrimonioTotal = efDespues + ahorro + (crypto * precioBC);
+  // Máximo 4 filas de detalle — solo lo más importante
   const detalles = [];
 
-  if (evento) {
-    detalles.push({ icon: evento.icono, label: evento.titulo.replace(/[^\x20-\x7E\u00C0-\u024F\u0400-\u04FF]/gu, '').trim() || 'Evento del día', value: evento.impactoEfectivo !== 0 ? `${evento.impactoEfectivo > 0 ? '+' : ''}$${evento.impactoEfectivo}` : `x${evento.impactoVentas} ventas`, color: evento.tipo === 'bueno' ? '#4a9e4a' : evento.tipo === 'malo' ? '#c0392b' : '#d4901a', sub: evento.leccionFinanciera });
-  }
-  detalles.push({ icon: '🌮', label: 'Ventas del día', value: `+$${ventas.toFixed(0)}`, color: '#4a9e4a', sub: diaCompleto ? 'Día completo 💪' : `${accionesUsadas}/${totalAcciones} turnos — perdiste ventas` });
-  detalles.push({ icon: '🏪', label: 'Costos operativos', value: `-$${costos.toFixed(0)}`, color: '#c0392b', sub: 'Renta + insumos (siempre se pagan)' });
-  detalles.push({ icon: gano ? '📈' : '📉', label: 'Resultado neto', value: `${gano ? '+' : ''}$${neto.toFixed(0)}`, color: gano ? '#4a9e4a' : '#c0392b', sub: gano ? '¡Día rentable!' : 'Ajusta la estrategia' });
+  // 1. Resultado del día (siempre)
+  detalles.push({
+    icon: gano ? '📈' : '📉',
+    label: 'Resultado del día',
+    value: `${gano ? '+' : ''}$${neto.toFixed(0)}`,
+    color: gano ? '#4a9e4a' : '#c0392b',
+    sub: diaCompleto ? `Ventas $${ventas.toFixed(0)} — Costos $${costos.toFixed(0)}` : `Solo ${accionesUsadas}/${totalAcciones} turnos — ventas reducidas`,
+  });
+
+  // 2. Misión (solo si es relevante)
   if (mision && misionCumplida) {
-    const r = mision.recompensa;
-    detalles.push({ icon: '🎯', label: `Misión cumplida: ${mision.titulo}`, value: mision.recompensaLabel, color: '#b5820a', sub: '¡Bonus aplicado!' });
+    detalles.push({ icon: '🎯', label: `Misión: ${mision.titulo}`, value: mision.recompensaLabel, color: '#b5820a', sub: '¡Bonus aplicado!' });
+  } else if (mision && !misionCumplida && !diaCompleto) {
+    detalles.push({ icon: '😔', label: `Misión fallida`, value: 'Sin bonus', color: '#8c7c6e', sub: mision.consejo });
   }
-  if (mision && !misionCumplida) {
-    detalles.push({ icon: '😔', label: `Misión fallida: ${mision.titulo}`, value: 'Sin bonus', color: '#8c7c6e', sub: mision.consejo });
+
+  // 3. Evento del día (si hubo)
+  if (evento) {
+    const impactoStr = evento.impactoEfectivo !== 0
+      ? `${evento.impactoEfectivo > 0 ? '+' : ''}$${evento.impactoEfectivo}`
+      : `Ventas x${evento.impactoVentas}`;
+    detalles.push({
+      icon: evento.icono,
+      label: 'Evento del día',
+      value: impactoStr,
+      color: evento.tipo === 'bueno' ? '#4a9e4a' : evento.tipo === 'malo' ? '#c0392b' : '#d4901a',
+      sub: evento.leccionFinanciera,
+    });
+  }
+
+  // 4. Noticia de BC (si hubo — solo el impacto, sin popup separado)
+  if (noticia) {
+    const esBuena = noticia.cambioPorcentualPrecio >= 0;
+    const pct = Math.abs(noticia.cambioPorcentualPrecio * 100).toFixed(0);
+    detalles.push({
+      icon: '📰',
+      label: 'Noticias del barrio',
+      value: `BC ${esBuena ? '+' : '-'}${pct}%`,
+      color: esBuena ? '#4a9e4a' : '#c0392b',
+      sub: noticia.titulo,
+    });
   }
 
   let titulo, tipo;
@@ -312,7 +345,8 @@ function generarFeedback(diaCompleto, accionesUsadas, totalAcciones, neto, venta
   else if (gano) { titulo = '✅ ¡Buen día, Don José!'; tipo = 'bueno'; }
   else { titulo = '📉 Día difícil'; tipo = 'malo'; }
 
-  return { titulo, tipo, detalles, patrimonioTotal };
+  // Concepto financiero — se muestra al pie del mismo popup, no en uno separado
+  return { titulo, tipo, detalles, patrimonioTotal, concepto };
 }
 
 function calcularResumenSemana(historial, semanaGlobal, efectivo, ahorro) {
