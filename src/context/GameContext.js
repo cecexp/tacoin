@@ -5,7 +5,14 @@ import {
   XP_POR_ACCION, getNivelActual, getConceptoDelDia,
 } from '../data/gameData';
 
-const COSTOS = { renta: 40, insumos: 30, ventaCompleta: 180 };
+const COSTOS = {
+  renta: 40,
+  insumos: 30,
+  ventaCompleta: 180,
+  // Cerrar antes: costos extra por "desperdiciar" el día
+  penaltyExtra: 60,    // multa adicional por no trabajar completo
+  ventaMinima: 20,     // ventas mínimas aunque cierres (ya compraste insumos)
+};
 
 const getEstadoAnimo = (efectivo, ahorro, crypto, precioBC) => {
   const total = efectivo + ahorro + (crypto * precioBC);
@@ -82,34 +89,34 @@ function gameReducer(state, action) {
       let ef = state.efectivoNegocio, ah = state.ahorroPersonal, cr = state.carteraCrypto;
       let vendioHoy = state._vendioHoy;
 
-   // 1. Calculamos el costo total de la acción
-   let costoTotalAPagar = 0;
-   if (decision.deltaEfectivo < 0) costoTotalAPagar += Math.abs(decision.deltaEfectivo);
-   if (decision.deltaAhorro < 0) costoTotalAPagar += Math.abs(decision.deltaAhorro);
-   if (decision.esCryptoCompra || decision.esCryptoCompraDesdeAhorro) costoTotalAPagar += (decision.montoCryptoCompra || 0);
-
-   // 2. Cobro Inteligente: Intentamos pagar con efectivo, si falta, sacamos del ahorro
-   if (costoTotalAPagar > 0) {
-     if (ef >= costoTotalAPagar) {
-       ef -= costoTotalAPagar;
-     } else {
-       const faltante = costoTotalAPagar - ef;
-       ef = 0;
-       ah = Math.max(0, ah - faltante);
-     }
-   }
-
-   // 3. Aplicamos ganancias y ventas/compras de crypto
-   if (decision.deltaEfectivo > 0) ef += decision.deltaEfectivo;
-   if (decision.deltaAhorro > 0) ah += decision.deltaAhorro;
-   
-   if (decision.esCryptoVenta && decision.cantidadVenta) {
-     const c = Math.min(decision.cantidadVenta, cr); cr -= c; ef += c * state.precioBC;
-     vendioHoy = true;
-   }
-   if ((decision.esCryptoCompra || decision.esCryptoCompraDesdeAhorro) && decision.montoCryptoCompra) {
-     cr += (decision.montoCryptoCompra / state.precioBC);
-   }
+      if (decision.esCryptoCompra && decision.montoCryptoCompra) {
+        // Paga con efectivo primero, luego ahorro si falta
+        let monto = decision.montoCryptoCompra;
+        const pagoEf = Math.min(monto, ef);
+        ef -= pagoEf; monto -= pagoEf;
+        if (monto > 0) { const pagoAh = Math.min(monto, ah); ah -= pagoAh; monto -= pagoAh; }
+        const gastado = decision.montoCryptoCompra - monto;
+        cr += gastado / state.precioBC;
+      } else if (decision.esCryptoCompraDesdeAhorro && decision.montoCryptoCompra) {
+        const m = Math.min(decision.montoCryptoCompra, ah); ah -= m; cr += m / state.precioBC;
+      } else if (decision.esCryptoVenta && decision.cantidadVenta) {
+        const cant = Math.min(decision.cantidadVenta, cr); cr -= cant; ef += cant * state.precioBC;
+        vendioHoy = true;
+      } else {
+        // Para gastos: paga con efectivo primero, luego ahorro si falta
+        const deltaEf = decision.deltaEfectivo || 0;
+        if (deltaEf < 0) {
+          const costo = Math.abs(deltaEf);
+          const pagoEf = Math.min(costo, ef);
+          ef -= pagoEf;
+          const pagoAh = Math.min(costo - pagoEf, ah);
+          ah -= pagoAh;
+        } else {
+          ef = Math.max(0, ef + deltaEf);
+        }
+        ah = Math.max(0, ah + (decision.deltaAhorro || 0));
+        cr = Math.max(0, cr + (decision.deltaCrypto || 0));
+      }
 
       const historial = [...state.historial, {
         diaGlobal: state.diaGlobal, diaSemana: state.diaSemana,
@@ -117,13 +124,7 @@ function gameReducer(state, action) {
       }];
       const accionesRestantes = state.accionesRestantes - 1;
       const accionesUsadasHoy = state.accionesUsadasHoy + 1;
-      // --- NUEVA LÓGICA DE BANCARROTA ---
-      // Contamos cuántas decisiones "recomendadas" (aciertos) lleva + la que acaba de tomar
-      const aciertosTotales = state.historial.filter(h => h.decision.esRecomendada).length + (decision.esRecomendada ? 1 : 0);
-      const capitalTotal = ef + ah;
-      
-      // Quiebra si se queda en $0 absoluto, O si tiene menos de $300 y menos de 5 aciertos
-      const hayBancarrota = (ef <= 0 && ah <= 0) || (capitalTotal < 300 && aciertosTotales < 5);
+      const hayBancarrota = ef <= 0 && ah <= 0;
 
       // Frase Don José según decisión
       const frase = getDonJoseFrase(decision.esRecomendada ? 'decision_buena' : 'decision_mala');
@@ -184,12 +185,20 @@ function gameReducer(state, action) {
 
 // ── Fin de día ────────────────────────────────────────────────
 function terminarDia(state, diaCompleto) {
-  const costoFijo = COSTOS.renta + COSTOS.insumos;
+  // Día completo: costos normales. Cierre anticipado: costos + penalización
+  const costoFijo = diaCompleto
+    ? COSTOS.renta + COSTOS.insumos
+    : COSTOS.renta + COSTOS.insumos + COSTOS.penaltyExtra; // insumos comprados, equipo movilizado
 
   // Evento sorpresa afecta ventas
   const eventoMult = state.eventoHoy ? (state.eventoHoy.impactoVentas || 1) : 1;
-  const proporcion = diaCompleto ? 1 : ((state.accionesUsadasHoy || 0) / GAME_CONFIG.accionesFinancierasPorDia);
-  const ventas     = Math.max(0, COSTOS.ventaCompleta * proporcion * eventoMult * (1 + Math.random() * 0.3 - 0.1));
+  const accionesUsadas = state.accionesUsadasHoy || 0;
+  const totalAcciones  = GAME_CONFIG.accionesFinancierasPorDia;
+  // Cierre anticipado: ventas proporcionales pero con degradación agresiva
+  // 0 acciones = 0 ventas, 1 acción = 25% ventas, 2 acciones = 55% ventas, completo = 100%
+  const proporcionRaw = diaCompleto ? 1 : Math.pow(accionesUsadas / totalAcciones, 1.5);
+  const proporcion    = diaCompleto ? 1 : Math.max(COSTOS.ventaMinima / COSTOS.ventaCompleta, proporcionRaw);
+  const ventas     = Math.max(COSTOS.ventaMinima, COSTOS.ventaCompleta * proporcion * eventoMult * (1 + Math.random() * 0.25 - 0.05));
   const neto       = ventas - costoFijo;
 
   // Efecto directo del evento en efectivo
@@ -207,6 +216,7 @@ function terminarDia(state, diaCompleto) {
   }
 
   // XP del día
+  // No local re-declare accionesUsadas, already set above
   const xpDia = (diaCompleto ? XP_POR_ACCION.dia_completo_bonus : 0) + (misionCumplida ? XP_POR_ACCION.mision_cumplida_bonus : 0);
   const nuevoXPTotal = (state.xpTotal || 0) + xpDia;
   const nivelAntesFinDia = getNivelActual(state.xpTotal || 0).nivel;
@@ -282,10 +292,7 @@ function terminarDia(state, diaCompleto) {
   }
 
   const [primero, ...resto] = cola;
-  const aciertosFinDia = state.historial.filter(h => h.decision.esRecomendada).length;
-  const capitalFinDia = efConRecompensa + state.ahorroPersonal;
-  
-  const hayBancarrota = (efConRecompensa <= 0 && state.ahorroPersonal <= 0) || (capitalFinDia < 300 && aciertosFinDia < 5);
+  const hayBancarrota = efConRecompensa <= 0 && state.ahorroPersonal <= 0;
 
   // Nuevo evento para mañana
   const eventoManana = getEventoAleatorio();

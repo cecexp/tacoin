@@ -71,7 +71,7 @@ function GameFlow({ appScreen, setAppScreen }) {
   return (
     <>
       <StatusBar style="dark" />
-      <GameScreen onVerGlosario={() => setShowGlosario(true)} />
+      <GameScreen onVerGlosario={() => setShowGlosario(true)} onVolverMapa={() => setAppScreen('map')} />
     </>
   );
 }

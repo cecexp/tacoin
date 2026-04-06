@@ -19,7 +19,7 @@ function TileBackground({ width, height }) {
   return <View style={StyleSheet.absoluteFill}><View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>{tiles}</View></View>;
 }
 
-export default function GameScreen({ onVerGlosario }) {
+export default function GameScreen({ onVerGlosario, onVolverMapa }) {
   const { state, estadoAnimo, aplicarDecision, forzarFinDeDia } = useGame();
   const { decisionesDelDia, accionesRestantes, diaGlobal, semanaGlobal, popupActual, popupConsejo, eventoHoy } = state;
   const { width, height } = useWindowDimensions();
@@ -71,6 +71,11 @@ export default function GameScreen({ onVerGlosario }) {
               <Text style={{ fontSize: 20 }}>📖</Text>
             </TouchableOpacity>
           )}
+          {onVolverMapa && (
+            <TouchableOpacity style={styles.btnGlosario} onPress={onVolverMapa}>
+              <Text style={{ fontSize: 20 }}>🗺️</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <Text style={styles.sectionTitle}>¿Qué hace Don José hoy?</Text>
@@ -81,8 +86,6 @@ export default function GameScreen({ onVerGlosario }) {
             decision={decision}
             onPress={aplicarDecision}
             disabled={!puedeDecidir}
-            efectivoActual={state.efectivoNegocio} 
-          ahorroActual={state.ahorroPersonal}
           />
         ))}
 
